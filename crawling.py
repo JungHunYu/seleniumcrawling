@@ -145,7 +145,7 @@ if __name__ =='__main__':
 
     for i in range(0, drivercount): 
         options.add_argument('window-position=' + str(i*100) + ',' + str(i*100))
-        driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options))
+        driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options)) 
 
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
