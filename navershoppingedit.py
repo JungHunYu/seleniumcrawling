@@ -70,7 +70,13 @@ def getwebdirver(id, password):
         options.add_argument('--disable-software-rasterizer')
         options.add_argument('window-size=1920x1080')
         options.add_argument("disable-gpu")
-        webdirver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)            
+        
+
+        if platform.system() == 'Windows':
+            webdirver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)            
+        else :
+            webdirver = webdriver.Chrome('./chromedriver', chrome_options=options)            
+
         webdirver.get('https://searchad.naver.com/')
 
         time.sleep(0.20) 

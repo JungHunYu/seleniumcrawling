@@ -23,6 +23,7 @@ class MyHandler(BaseHTTPRequestHandler):
         requestcount = requestcount + 1
 
         databody = (self.rfile.read(int(self.headers['content-length']))).decode('utf-8')
+        print(databody)
         datajson = simplejson.loads(databody)   
         
         self.send_response_only(200, 'OK')
@@ -92,6 +93,7 @@ class MyHandler(BaseHTTPRequestHandler):
         if completeoptionmode == 'VISIBLE':
 
             if completeoptionfindobject == 'CLASSNAME':
+                print('1')  
                 items = driver.find_elements_by_class_name(completeoptionfindname)
                 while len(items) < 1:
                     time.sleep(0.01)    
@@ -102,12 +104,14 @@ class MyHandler(BaseHTTPRequestHandler):
                         break
 
             elif completeoptionfindobject == 'ID':
+                print('2')  
                 wait = WebDriverWait(driver, timeout)
                 try:
                     elem = wait.until(EC.element_to_be_clickable((By.ID, completeoptionfindname))) 
                 except:
                     print('ID Find fail : ' + completeoptionfindname)
             elif completeoptionfindobject == '':
+                print('3')  
                 time.sleep(timeout)    
 
         elif completeoptionmode == 'VALUE':
@@ -127,7 +131,10 @@ class MyHandler(BaseHTTPRequestHandler):
                             break      
                 except:
                     print('ID Find fail : ' + completeoptionfindname)
-        html_source = driver.page_source    
+                    
+        html_source = driver.page_source  
+
+        # print(html_source)  
 
         self.wfile.write(html_source.encode("utf-8"))             
 
@@ -148,8 +155,10 @@ if __name__ =='__main__':
 
     for i in range(0, drivercount): 
         options.add_argument('window-position=' + str(i*100) + ',' + str(i*100))
-        driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options)) 
-        # driverlist.append(webdriver.Chrome('.\chromedriver.exe', chrome_options=options)) 
+        if platform.system() == 'Windows':
+            driverlist.append(webdriver.Chrome('.\chromedriver.exe', chrome_options=options)) 
+        else :
+            driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options)) 
 
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
