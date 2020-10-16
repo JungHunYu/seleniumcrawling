@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import simplejson
 import time
 import sys
+import platform
 
 global drivercount
 drivercount = 1
@@ -106,6 +107,8 @@ class MyHandler(BaseHTTPRequestHandler):
                     elem = wait.until(EC.element_to_be_clickable((By.ID, completeoptionfindname))) 
                 except:
                     print('ID Find fail : ' + completeoptionfindname)
+            elif completeoptionfindobject == '':
+                time.sleep(timeout)    
 
         elif completeoptionmode == 'VALUE':
             if completeoptionfindobject == 'ID':
@@ -146,6 +149,7 @@ if __name__ =='__main__':
     for i in range(0, drivercount): 
         options.add_argument('window-position=' + str(i*100) + ',' + str(i*100))
         driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options)) 
+        # driverlist.append(webdriver.Chrome('.\chromedriver.exe', chrome_options=options)) 
 
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
