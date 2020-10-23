@@ -88,7 +88,8 @@ class MyHandler(BaseHTTPRequestHandler):
 
                 for word in submitoptioninputtext:
                     item.send_keys(word)    
-                    time.sleep(0.01)  
+                    
+
 
                 item.send_keys(Keys.RETURN)    
 
@@ -153,9 +154,9 @@ if __name__ =='__main__':
     
     for i in range(0, drivercount): 
         if platform.system() == 'Windows':
-            driverlist.append(webdriver.PhantomJS(r'C:\Users\ceed5\AppData\Roaming\npm\node_modules\phantomjs\lib\phantom\bin\phantomjs.exe')) 
+            driverlist.append(webdriver.PhantomJS(r'.\phantomjs.exe')) 
         else :
-            driverlist.append(webdriver.PhantomJS(r'C:\Users\ceed5\AppData\Roaming\npm\node_modules\phantomjs\lib\phantom\bin\phantomjs.exe')) 
+            driverlist.append(webdriver.PhantomJS(r'./phantomjs')) 
 
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
