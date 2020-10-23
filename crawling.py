@@ -15,7 +15,7 @@ global drivercount
 if platform.system() == 'Windows':
     drivercount = 1
 else :
-    drivercount = 10 
+    drivercount = 2 
 
 
 global driverlist
