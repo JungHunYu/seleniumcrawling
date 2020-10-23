@@ -11,7 +11,13 @@ import sys
 import platform
 
 global drivercount
-drivercount = 1
+
+if platform.system() == 'Windows':
+    drivercount = 1
+else :
+    drivercount = 5
+
+
 global driverlist
 driverlist  = []
 
