@@ -26,14 +26,12 @@ class MyHandler(BaseHTTPRequestHandler):
         print(databody)
         datajson = simplejson.loads(databody)   
         
-        self.send_response_only(200, 'OK')
-        self.send_header('Content-Type', 'text/plan')
-        self.end_headers()
         index = requestcount%drivercount
         driver = driverlist[index]
 
         geturl = datajson["URL"]
         timeout = int(datajson["TIMEOUT"])
+        response_code = 200
         
         submitoptionfindobject = ''
         submitoptionfindname = ''
@@ -43,6 +41,7 @@ class MyHandler(BaseHTTPRequestHandler):
         completeoptionfindobject = ''
         completeoptionfindname = ''
         completeoptionfindvalue = ''
+        
 
         if 'SUBMITOPTION' in datajson.keys() :
             submitoptionfindobject = datajson["SUBMITOPTION"]["FINDOBJECT"].upper()
@@ -93,7 +92,6 @@ class MyHandler(BaseHTTPRequestHandler):
         if completeoptionmode == 'VISIBLE':
 
             if completeoptionfindobject == 'CLASSNAME':
-                print('1')  
                 items = driver.find_elements_by_class_name(completeoptionfindname)
                 while len(items) < 1:
                     time.sleep(0.01)    
@@ -104,14 +102,13 @@ class MyHandler(BaseHTTPRequestHandler):
                         break
 
             elif completeoptionfindobject == 'ID':
-                print('2')  
                 wait = WebDriverWait(driver, timeout)
                 try:
                     elem = wait.until(EC.element_to_be_clickable((By.ID, completeoptionfindname))) 
                 except:
+                    response_code = 500
                     print('ID Find fail : ' + completeoptionfindname)
             elif completeoptionfindobject == '':
-                print('3')  
                 time.sleep(timeout)    
 
         elif completeoptionmode == 'VALUE':
@@ -130,14 +127,18 @@ class MyHandler(BaseHTTPRequestHandler):
                         if thistime > thentime:
                             break      
                 except:
+                    response_code = 500
                     print('ID Find fail : ' + completeoptionfindname)
                     
         html_source = driver.page_source  
 
         # print(html_source)  
-
+        print(driver.current_url)
+        self.send_response_only(response_code, 'OK')
+        self.send_header('Content-Type', 'text/plan')
+        self.send_header('current_url', driver.current_url)
+        self.end_headers()
         self.wfile.write(html_source.encode("utf-8"))             
-
 if __name__ =='__main__':
     global requestcount
     requestcount = 0
