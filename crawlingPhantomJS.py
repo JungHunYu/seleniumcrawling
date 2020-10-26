@@ -156,7 +156,7 @@ if __name__ =='__main__':
         if platform.system() == 'Windows':
             driverlist.append(webdriver.PhantomJS(r'.\phantomjs.exe')) 
         else :
-            driverlist.append(webdriver.PhantomJS(r'./phantomjs')) 
+            driverlist.append(webdriver.PhantomJS('./phantomjs')) 
 
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
