@@ -14,12 +14,36 @@ global drivercount
 
 if platform.system() == 'Windows':
     drivercount = 1
+    driverrequestlimit = 5
 else :
-    drivercount = 2 
+    drivercount = 4 
+    driverrequestlimit = 100
 
 
 global driverlist
 driverlist  = []
+
+
+global options
+options = webdriver.ChromeOptions()
+# options.add_argument('--headless')
+options.add_argument("--incognito")
+options.add_argument("--disable-notifications")
+options.add_argument('--no-sandbox')
+options.add_argument('--verbose')
+options.add_argument('--disable-dev-shm-usage')
+options.add_argument('--disable-software-rasterizer')
+options.add_argument('window-size=1920x1080')
+options.add_argument("disable-gpu")
+
+def getwebdirver():
+    if platform.system() == 'Windows':
+        driver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)
+    else :
+        driver = webdriver.Chrome('/web/chromedriver', chrome_options=options)
+
+    driver.requestcount = 0
+    return driver
 
 
 
@@ -62,6 +86,7 @@ class MyHandler(BaseHTTPRequestHandler):
             completeoptionfindvalue = datajson["COMPLETEOPTION"]["FINDVALUE"]            
             
         print(
+            "version : 1.0", 
             "URL : " + geturl, 
             "TIMEOUT : " + str(timeout), 
             "SUBMITOPTION FINDOBJECT : " + submitoptionfindobject, 
@@ -72,7 +97,9 @@ class MyHandler(BaseHTTPRequestHandler):
             "COMPLETEOPTION FINDNAME : " + completeoptionfindname, 
             "drivercount : " + str(drivercount), 
             "requestcount : " + str(requestcount), 
-            "index : " + str(index), sep='\n'
+            "driiver requestcount : " + str(driver.requestcount), 
+            "index : " + str(index), 
+            sep='\n'
             )
 
 
@@ -145,28 +172,24 @@ class MyHandler(BaseHTTPRequestHandler):
         self.send_header('current_url', driver.current_url)
         self.end_headers()
         self.wfile.write(html_source.encode("utf-8"))             
+        driver.requestcount = driver.requestcount + 1
+
+        if driver.requestcount > driverrequestlimit:
+            driver.quit()
+            driverlist[index] = getwebdirver()
+            driver = driverlist[index]
+
+
 if __name__ =='__main__':
     global requestcount
     requestcount = 0
     server = HTTPServer(('', int(sys.argv[1])), MyHandler)
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
-    options.add_argument("--incognito")
-    options.add_argument("--disable-notifications")
-    options.add_argument('--no-sandbox')
-    options.add_argument('--verbose')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-software-rasterizer')
-    options.add_argument('window-size=1920x1080')
-    options.add_argument("disable-gpu")
+    
+    # global options
 
     for i in range(0, drivercount): 
-        options.add_argument('window-position=' + str(i*100) + ',' + str(i*100))
-        if platform.system() == 'Windows':
-            driverlist.append(webdriver.Chrome('.\chromedriver.exe', chrome_options=options)) 
-        else :
-            driverlist.append(webdriver.Chrome('/web/chromedriver', chrome_options=options)) 
-
+        driverlist.append(getwebdirver()) 
+        
 
     print('Solution Rending Check Server on port ' + sys.argv[1]  + '...')
     print('Press ^c to quit server')
