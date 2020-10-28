@@ -17,7 +17,7 @@ if platform.system() == 'Windows':
     driverrequestlimit = 5
 else :
     drivercount = 4 
-    driverrequestlimit = 100
+    driverrequestlimit = 20
 
 
 global driverlist
@@ -59,7 +59,7 @@ class MyHandler(BaseHTTPRequestHandler):
         index = requestcount%drivercount
         driver = driverlist[index]
         driver.requestcount = driver.requestcount + 1
-        
+
         geturl = datajson["URL"]
         timeout = int(datajson["TIMEOUT"])
         response_code = 200
