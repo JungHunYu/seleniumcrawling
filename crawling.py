@@ -58,7 +58,8 @@ class MyHandler(BaseHTTPRequestHandler):
         
         index = requestcount%drivercount
         driver = driverlist[index]
-
+        driver.requestcount = driver.requestcount + 1
+        
         geturl = datajson["URL"]
         timeout = int(datajson["TIMEOUT"])
         response_code = 200
@@ -86,7 +87,7 @@ class MyHandler(BaseHTTPRequestHandler):
             completeoptionfindvalue = datajson["COMPLETEOPTION"]["FINDVALUE"]            
             
         print(
-            "version : 1.0", 
+            "version : 1.1", 
             "URL : " + geturl, 
             "TIMEOUT : " + str(timeout), 
             "SUBMITOPTION FINDOBJECT : " + submitoptionfindobject, 
@@ -97,7 +98,7 @@ class MyHandler(BaseHTTPRequestHandler):
             "COMPLETEOPTION FINDNAME : " + completeoptionfindname, 
             "drivercount : " + str(drivercount), 
             "requestcount : " + str(requestcount), 
-            "driiver requestcount : " + str(driver.requestcount), 
+            "driver requestcount : " + str(driver.requestcount), 
             "index : " + str(index), 
             sep='\n'
             )
@@ -172,7 +173,7 @@ class MyHandler(BaseHTTPRequestHandler):
         self.send_header('current_url', driver.current_url)
         self.end_headers()
         self.wfile.write(html_source.encode("utf-8"))             
-        driver.requestcount = driver.requestcount + 1
+        
 
         if driver.requestcount > driverrequestlimit:
             driver.quit()
