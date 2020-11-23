@@ -13,6 +13,7 @@ import sys
 import os.path
 import pymssql
 import binascii
+import platform
 
 global driverlist
 driverlist  = []
@@ -59,6 +60,7 @@ def getwebdirver(id, password):
             webdirver.status = 'run'
             webdirver.touchtime = datetime.datetime.now()
 
+
     if webdirver == None:
         options = webdriver.ChromeOptions()
         # options.add_argument('--headless')
@@ -79,12 +81,12 @@ def getwebdirver(id, password):
 
         webdirver.get('https://searchad.naver.com/')
 
-        time.sleep(0.20) 
-        webdirver.find_element_by_id('uid').send_keys('wonder_shop')    
-        webdirver.find_element_by_id('upw').send_keys('wondershop!')    
+        time.sleep(1.00) 
+        webdirver.find_element_by_id('uid').send_keys(id)    
+        webdirver.find_element_by_id('upw').send_keys(password)    
         webdirver.find_element_by_id('upw').send_keys(Keys.RETURN)    
 
-        time.sleep(0.20) 
+        time.sleep(1.00) 
         if len(webdirver.window_handles) > 1 :
             webdirver.switch_to_window(webdirver.window_handles[1])
             webdirver.close()
@@ -111,47 +113,70 @@ if __name__ =='__main__':
     isrunning = True
 
     while isrunning:
-        cur.execute("SELECT top 1 * FROM Dat_NavShopEdit where status = 10 and Trycount < 4 order by num asc")
+        cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 order by a.num asc")
+        # cur.execute("SELECT top 1 * FROM Dat_NavShopEdit order by num asc")
         rows = cur.fetchall()
         if len(rows) > 0 :
             for row in rows:
+                seq = str(row['Seq'])
+                trycount = row['trycount'] + 1
+                
+                id = row['ID']
+                password = row['Password']
+                customerid = row['CustomerId']
+                adid = row['AdId']
+                title = row['Title']
+
+
                 try: 
-                    qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1 where seq=' + str(row['Seq']))
+                    qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1 where seq=' + seq)
+                    url1 = 'https://manage.searchad.naver.com/customers/' + customerid + '/ads/' + adid
+                    webdriver = getwebdirver(id, password)
+                    webdriver.get(url1)
+                    time.sleep(2.00) 
 
-                    webdriver = getwebdirver(row['ID'], row['Password'])
-                    webdriver.get('https://manage.searchad.naver.com/customers/' + row['CustomerId'] + '/ads/' + row['AdId'])
-                    time.sleep(0.20) 
-                    webdriver.find_element_by_xpath('//*[@id="wrap"]/div/div/div[1]/div[1]/div/div/div/div[2]/div[1]/div/div/div[1]/div[1]/button').click()
+                    webdriver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
+                    time.sleep(2.00)                
 
-                    time.sleep(0.20) 
-                    webdriver.find_element_by_xpath('//*[@id="inputProdnm"]').send_keys(Keys.CONTROL + "a")
-                    webdriver.find_element_by_xpath('//*[@id="inputProdnm"]').send_keys(Keys.DELETE)
-                    webdriver.find_element_by_xpath('//*[@id="inputProdnm"]').send_keys(row['Title']) 
+                    if title != None :
+                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.CONTROL + "a")
+                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
+                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
 
                     try: 
-                        webdriver.find_element_by_xpath('//*[@id="wrap"]/div[1]/div/div/div/form/div[2]/div[1]/div/div/div/ng-form/div[3]/div[2]/div/div[2]/div/div[1]/div/button').click()
+                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
                     except:
                         print('button None')
 
-                    dropzone = webdriver.find_element_by_xpath('//*[@id="wrap"]/div[1]/div/div/div/form/div[2]/div[1]/div/div/div/ng-form/div[3]/div[2]/div/div[2]/div/div[2]/div/div/div/div/div[1]')
 
-                    imagedata = row['Image']
-                    imagepath = temppath + row['ImageName']
-                    f = open(imagepath, 'wb')
-                    f.write(imagedata)
-                    f.close()
+                    if row['imagesize'] > 0 :
+                        dropzone = webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
+                        imagedata = row['Image']
+                        imagepath = temppath + row['ImageName']
+                        print('imagepath : ' + imagepath)
+                        f = open(imagepath, 'wb')
+                        f.write(imagedata)
+                        f.close()
+                        dropzone.drop_files(imagepath)
 
-                    dropzone.drop_files(imagepath)
                     
-                    time.sleep(0.20) 
-                    webdriver.find_element_by_xpath('//*[@id="wrap"]/div[1]/div/div/div/form/div[3]/span/button[1]').click()
+                    time.sleep(2.00) 
+                    webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
                     webdriver.status = 'idle'
-                    os.remove(imagepath)
-                    qry.execute('update Dat_NavShopEdit set status = 30 where seq=' + str(row['Seq']))
-                    time.sleep(0.20)             
+
+                    if row['imagesize'] > 0 :
+                        os.remove(imagepath)
+
+                    qry.execute('update Dat_NavShopEdit set status = 30 where seq=' + seq)
+                    time.sleep(2.00)             
 
                 except:
-                    print('error Seq : ' + str(row['Seq']))
+                    print('error Seq : ' + seq)
+                    webdriver.status = 'idle'
+                    qry.execute('update Dat_NavShopEdit set status = 10 where seq=' + seq)
+                    if trycount > 3 :
+                        qry.execute('update Dat_NavShopEdit set status = 40 where seq=' + seq)
+
 
             
         else :
