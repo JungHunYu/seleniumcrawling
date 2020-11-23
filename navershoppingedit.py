@@ -1,6 +1,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -51,55 +52,74 @@ def hasxpath(xpath):
 
 #--------------------------------------------------------------------------
 
+global options
+options = webdriver.ChromeOptions()
+# options.add_argument('--headless')
+options.add_argument("--incognito")
+options.add_argument("--disable-notifications")
+options.add_argument('--no-sandbox')
+options.add_argument('--verbose')
+options.add_argument('--disable-dev-shm-usage')
+options.add_argument('--disable-software-rasterizer')
+options.add_argument('window-size=1920x1080')
+options.add_argument("disable-gpu")
+
 def getwebdirver(id, password):
-    webdirver = None
+    print('id : ' + id)
+    print('password : ' + password)
+
+    driver = None
     global driverlist
     for item in driverlist:
         if item.id == id and item.password == password and item.status == 'idle':
-            webdirver = item
-            webdirver.status = 'run'
-            webdirver.touchtime = datetime.datetime.now()
+            driver = item
+            driver.status = 'run'
+            driver.touchtime = datetime.datetime.now()
 
 
-    if webdirver == None:
-        options = webdriver.ChromeOptions()
-        # options.add_argument('--headless')
-        options.add_argument("--incognito")
-        options.add_argument("--disable-notifications")
-        options.add_argument('--no-sandbox')
-        options.add_argument('--verbose')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-software-rasterizer')
-        options.add_argument('window-size=1920x1080')
-        options.add_argument("disable-gpu")
+    if driver == None:
+        if platform.system() == 'Windows':
+            driver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)          
+        else :
+            driver = webdriver.Chrome('./chromedriver', chrome_options=options)            
+        
+        driver.get('https://searchad.naver.com/')
+
+        time.sleep(1.00) 
+        driver.find_element_by_id('uid').send_keys(id)    
+        driver.find_element_by_id('upw').send_keys(password)    
+        driver.find_element_by_id('upw').send_keys(Keys.RETURN)    
+
+        time.sleep(2.00) 
+
+        try : 
+            alert = driver.switch_to_alert()
+        except:
+            alert = None
         
 
-        if platform.system() == 'Windows':
-            webdirver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)            
-        else :
-            webdirver = webdriver.Chrome('./chromedriver', chrome_options=options)            
+        if alert == None : 
 
-        webdirver.get('https://searchad.naver.com/')
+            time.sleep(1.00) 
+            if len(driver.window_handles) > 1 :
+                driver.switch_to_window(driver.window_handles[1])
+                driver.close()
+                driver.switch_to_window(driver.window_handles[0])
+                    
+            driver.id = id
+            driver.password = password
+            driver.status = 'run'
+            driver.touchtime = datetime.datetime.now()
 
-        time.sleep(1.00) 
-        webdirver.find_element_by_id('uid').send_keys(id)    
-        webdirver.find_element_by_id('upw').send_keys(password)    
-        webdirver.find_element_by_id('upw').send_keys(Keys.RETURN)    
+            driverlist.append(driver) 
 
-        time.sleep(1.00) 
-        if len(webdirver.window_handles) > 1 :
-            webdirver.switch_to_window(webdirver.window_handles[1])
-            webdirver.close()
-            webdirver.switch_to_window(webdirver.window_handles[0])
-                
-        webdirver.id = id
-        webdirver.password = password
-        webdirver.status = 'run'
-        webdirver.touchtime = datetime.datetime.now()
+        else : 
+            alert.accept()
+            driver.quit()
+            driver = None
 
-        driverlist.append(webdirver) 
 
-    return webdirver
+    return driver
 
 
 if __name__ =='__main__':
@@ -113,6 +133,9 @@ if __name__ =='__main__':
     isrunning = True
 
     while isrunning:
+        print('process time : ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        
+
         cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 order by a.num asc")
         # cur.execute("SELECT top 1 * FROM Dat_NavShopEdit order by num asc")
         rows = cur.fetchall()
@@ -127,30 +150,34 @@ if __name__ =='__main__':
                 adid = row['AdId']
                 title = row['Title']
 
-
+                driver = getwebdirver(id, password)
                 try: 
                     qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1 where seq=' + seq)
                     url1 = 'https://manage.searchad.naver.com/customers/' + customerid + '/ads/' + adid
-                    webdriver = getwebdirver(id, password)
-                    webdriver.get(url1)
+                    
+
+                    if driver == None :
+                        raise NameError('로그인불가')
+
+                    driver.get(url1)
                     time.sleep(2.00) 
 
-                    webdriver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
+                    driver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
                     time.sleep(2.00)                
 
                     if title != None :
-                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.CONTROL + "a")
-                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
-                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
+                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.CONTROL + "a")
+                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
+                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
 
                     try: 
-                        webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
+                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
                     except:
                         print('button None')
 
 
                     if row['imagesize'] > 0 :
-                        dropzone = webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
+                        dropzone = driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
                         imagedata = row['Image']
                         imagepath = temppath + row['ImageName']
                         print('imagepath : ' + imagepath)
@@ -161,8 +188,8 @@ if __name__ =='__main__':
 
                     
                     time.sleep(2.00) 
-                    webdriver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
-                    webdriver.status = 'idle'
+                    driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
+                    driver.status = 'idle'
 
                     if row['imagesize'] > 0 :
                         os.remove(imagepath)
@@ -171,8 +198,10 @@ if __name__ =='__main__':
                     time.sleep(2.00)             
 
                 except:
-                    print('error Seq : ' + seq)
-                    webdriver.status = 'idle'
+                    # print('error Seq : ' + seq)
+                    if driver != None : 
+                        driver.status = 'idle'
+
                     qry.execute('update Dat_NavShopEdit set status = 10 where seq=' + seq)
                     if trycount > 3 :
                         qry.execute('update Dat_NavShopEdit set status = 40 where seq=' + seq)

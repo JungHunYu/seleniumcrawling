@@ -13,7 +13,7 @@ import platform
 global drivercount
 
 if platform.system() == 'Windows':
-    drivercount = 1
+    drivercount = 3
     driverrequestlimit = 5
 else :
     drivercount = 4 
