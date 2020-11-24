@@ -82,6 +82,7 @@ def getwebdirver(id, password):
             driver = webdriver.Chrome('.\chromedriver.exe', chrome_options=options)          
         else :
             driver = webdriver.Chrome('./chromedriver', chrome_options=options)            
+
         
         driver.get('https://searchad.naver.com/')
 
@@ -209,7 +210,10 @@ if __name__ =='__main__':
 
             
         else :
-            time.sleep(20.00) 
+            for item in driverlist:
+                item.refresh()
+
+            time.sleep(20.00)                 
 
         
     conn.Close()
