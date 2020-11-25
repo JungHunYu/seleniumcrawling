@@ -75,6 +75,8 @@ def getwebdirver(id, password):
             driver = item
             driver.status = 'run'
             driver.touchtime = datetime.datetime.now()
+            driver.refreshcount = 0
+            
 
 
     if driver == None:
@@ -211,6 +213,10 @@ if __name__ =='__main__':
             
         else :
             for item in driverlist:
+                item.refreshcount = item.refreshcount + 1
+                if item.refreshcount > 10 :
+                    driverlist.remove(item)
+
                 item.refresh()
 
             time.sleep(20.00)                 
