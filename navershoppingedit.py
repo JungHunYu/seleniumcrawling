@@ -75,7 +75,7 @@ def getwebdirver(id, password):
             driver = item
             driver.status = 'run'
             driver.touchtime = datetime.datetime.now()
-            driver.refreshcount = 0
+
             
 
 
@@ -113,6 +113,7 @@ def getwebdirver(id, password):
             driver.password = password
             driver.status = 'run'
             driver.touchtime = datetime.datetime.now()
+            driver.refreshcount = 0;
 
             driverlist.append(driver) 
 
