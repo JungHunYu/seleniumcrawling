@@ -172,8 +172,11 @@ if __name__ =='__main__':
                     driver.get(url1)
                     time.sleep(2.00) 
 
+
+
                     driver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
-                    time.sleep(2.00)   
+                    time.sleep(1.00)   
+
 
 
                     if title != None :
@@ -185,21 +188,29 @@ if __name__ =='__main__':
                             driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
                             driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
 
-                    try: 
-                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
-                    except:
-                        print('button None')
+
+
+
 
 
                     if row['imagesize'] > 0 :
+
+                        try: 
+                            driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
+                        except:
+                            print('button None')
+
+
                         dropzone = driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
                         imagedata = row['Image']
                         imagepath = temppath + row['ImageName']
                         
+
                         f = open(imagepath, 'wb')
                         f.write(imagedata)
                         f.close()
                         dropzone.drop_files(imagepath)
+
 
                         try: 
                             errormessage = driver.find_element_by_css_selector('#toast-container > div > div').text
@@ -208,9 +219,14 @@ if __name__ =='__main__':
                                 try : 
                                     qry.execute("insert into Dat_NavShopEdit_log values (%d, getdate(), %s)", (seq, errormessage.encode('euc-kr')))
                                 except exception as e :
-                                    print('d')
+                                    print(e)
                         except:
-                            print('drop ok')                        
+                            print('drop ok')           
+
+
+                    time.sleep(1.00)
+                    driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
+
 
                     if aresult == True : 
                         qry.execute('update Dat_NavShopEdit set status = 30, Update_DT=getdate() where seq=' + seq)
@@ -221,8 +237,12 @@ if __name__ =='__main__':
                         else : 
                             qry.execute('update Dat_NavShopEdit set status = 10, Update_DT=getdate() where seq=' + seq)
 
+
                     driver.status = 'idle'
-                    time.sleep(2.00)             
+                    time.sleep(1.00)             
+
+                    if row['imagesize'] > 0 :
+                        os.remove(imagepath)
 
                 except:
                     # print('error Seq : ' + seq)
