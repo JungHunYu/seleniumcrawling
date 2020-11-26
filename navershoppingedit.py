@@ -143,7 +143,7 @@ if __name__ =='__main__':
         print('process time : ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         
 
-        cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40order by a.num asc")
+        cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 order by a.num asc")
         # cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 and a.seq = 11 order by a.num asc")
         # cur.execute("SELECT top 1 * FROM Dat_NavShopEdit order by num asc")
         rows = cur.fetchall()
@@ -158,6 +158,8 @@ if __name__ =='__main__':
                 adid = row['AdId']
                 title = row['Title']
 
+                print('into seq : ' + seq)
+
                 driver = getwebdirver(seq, id, password)
                 try:
                     aresult = True
@@ -165,12 +167,25 @@ if __name__ =='__main__':
                     qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1, Update_DT=getdate() where seq=' + seq)
                     url1 = 'https://manage.searchad.naver.com/customers/' + customerid + '/ads/' + adid
                     
+                    print('url1 : ' + url1)
 
                     if driver == None :
                         raise NameError('로그인불가')
 
-                    driver.get(url1)
+                    driver.get(url1) 
                     time.sleep(2.00) 
+
+
+                    try: 
+                        errormessage = driver.find_element_by_css_selector('#toast-container > div > div').text
+                        if len(errormessage) > 1 :
+                            aresult = False
+                            try : 
+                                qry.execute("insert into Dat_NavShopEdit_log values (%d, getdate(), %s)", (seq, errormessage.encode('euc-kr')))
+                            except exception as e :
+                                print(e)
+                    except:
+                        print('url go')                          
 
 
 
