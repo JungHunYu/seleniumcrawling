@@ -15,6 +15,7 @@ import datetime
 import sys
 import os.path
 import pymssql
+# import pyodbc
 import binascii
 import platform
 
@@ -134,97 +135,63 @@ if __name__ =='__main__':
         os.makedirs(temppath)
 
     conn = pymssql.connect(host="112.216.80.54",user='solution',password='solu0601!@', database='DatNaver', port='14331', charset='EUC-KR', autocommit=True)
-    cur = conn.cursor(as_dict=True)
+    cur1 = conn.cursor(as_dict=True)
+    cur2 = conn.cursor(as_dict=True)
     qry = conn.cursor(as_dict=True)
+
+    # conn =  pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=112.216.80.54,14331;DATABASE=DatNaver;UID=solution;PWD=solu0601!@')
+    # cur1 = conn.cursor()
+    # cur2 = conn.cursor()
+    # qry = conn.cursor()
+
+
     
     isrunning = True
 
     while isrunning:
         print('process time : ' + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         
+        cur1.execute("SELECT top 1 a.seq FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 4 order by a.num asc")
+        rows = cur1.fetchall()
 
-        cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 order by a.num asc")
-        # cur.execute("SELECT top 1 a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where a.status = 10 and a.Trycount < 40 and a.seq = 11 order by a.num asc")
-        # cur.execute("SELECT top 1 * FROM Dat_NavShopEdit order by num asc")
-        rows = cur.fetchall()
+        
         if len(rows) > 0 :
             for row in rows:
-                seq = str(row['Seq'])
-                trycount = row['trycount'] + 1
-                
-                id = row['ID']
-                password = row['Password']
-                customerid = row['CustomerId']
-                adid = row['AdId']
-                title = row['Title']
-
+                seq = str(row['seq'])
                 print('into seq : ' + seq)
 
-                driver = getwebdirver(seq, id, password)
+                qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1, Update_DT=getdate() where seq=' + seq)
                 try:
-                    aresult = True
-
-                    qry.execute('update Dat_NavShopEdit set status = 20, Trycount = Trycount + 1, Update_DT=getdate() where seq=' + seq)
-                    url1 = 'https://manage.searchad.naver.com/customers/' + customerid + '/ads/' + adid
-                    
-                    print('url1 : ' + url1)
-
-                    if driver == None :
-                        raise NameError('로그인불가')
-
-                    driver.get(url1) 
-                    time.sleep(2.00) 
-
-
-                    try: 
-                        errormessage = driver.find_element_by_css_selector('#toast-container > div > div').text
-                        if len(errormessage) > 1 :
-                            aresult = False
-                            try : 
-                                qry.execute("insert into Dat_NavShopEdit_log values (%d, getdate(), %s)", (seq, errormessage.encode('euc-kr')))
-                            except exception as e :
-                                print(e)
-                    except:
-                        print('url go')                          
-
-
-
-                    driver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
-                    time.sleep(1.00)   
-
-
-
-                    if title != None :
-                        if len(title) > 25 : 
-                            qry.execute("insert into Dat_NavShopEdit_log values (" + seq + ", getdate(), 'title length over 25')")    
-                            aresult = False
-                        else : 
-                            driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.CONTROL + "a")
-                            driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
-                            driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
-
-
-
-
-
-
-                    if row['imagesize'] > 0 :
-
-                        try: 
-                            driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
-                        except:
-                            print('button None')
-
-
-                        dropzone = driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
-                        imagedata = row['Image']
-                        imagepath = temppath + row['ImageName']
+                    cur2.execute("SELECT a.*, isnull(datalength(a.Image) , 0) as imagesize FROM Dat_NavShopEdit a where seq = " + seq)
+                    citem = cur2.fetchone()
                         
 
-                        f = open(imagepath, 'wb')
-                        f.write(imagedata)
-                        f.close()
-                        dropzone.drop_files(imagepath)
+                    trycount = citem['trycount'] + 1
+                    id = citem['ID']
+                    password = citem['Password']
+                    customerid = citem['CustomerId']
+                    adid = citem['AdId']
+                    title = citem['Title']
+                    imagesize = citem['imagesize']
+
+                    print('into id : ' + id)
+                    if title != None:
+                        print('into title : ' + title)
+
+                    driver = getwebdirver(seq, id, password)
+                    try:
+                        aresult = True
+
+                        
+                        url1 = 'https://manage.searchad.naver.com/customers/' + customerid + '/ads/' + adid
+                        
+                        print('url1 : ' + url1)
+
+                        if driver == None :
+                            raise NameError('로그인불가')
+
+                        driver.get(url1) 
+                        time.sleep(2.00) 
 
 
                         try: 
@@ -236,45 +203,99 @@ if __name__ =='__main__':
                                 except exception as e :
                                     print(e)
                         except:
-                            print('drop ok')           
+                            print('url go')                          
 
 
-                    time.sleep(1.00)
-                    driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
+
+                        driver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div/div[1]/div[2]/div[1]/span/button').click()
+                        time.sleep(1.00)   
 
 
-                    if aresult == True : 
-                        qry.execute('update Dat_NavShopEdit set status = 30, Update_DT=getdate() where seq=' + seq)
-                    else :
 
-                        if trycount > 3 :    
+                        if title != None :
+                            if len(title) > 25 : 
+                                qry.execute("insert into Dat_NavShopEdit_log values (" + seq + ", getdate(), 'title length over 25')")    
+                                aresult = False
+                            else : 
+                                driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.CONTROL + "a")
+                                driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(Keys.DELETE)
+                                driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[2]/div[2]/div/input').send_keys(title) 
+
+
+
+
+
+
+                        if imagesize > 0 :
+
+                            try: 
+                                driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div[1]/button').click()
+                            except:
+                                print('button None')
+
+
+                            dropzone = driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[2]/div/div[4]/div[2]/div[1]/div[2]/div/div/div/div[2]/div')
+                            imagedata = citem['Image']
+                            imagepath = temppath + citem['ImageName']
+                            
+
+                            f = open(imagepath, 'wb')
+                            f.write(imagedata)
+                            f.close()
+                            dropzone.drop_files(imagepath)
+
+
+                            try: 
+                                errormessage = driver.find_element_by_css_selector('#toast-container > div > div').text
+                                if len(errormessage) > 1 :
+                                    aresult = False
+                                    try : 
+                                        qry.execute("insert into Dat_NavShopEdit_log values (%d, getdate(), %s)", (seq, errormessage.encode('euc-kr')))
+                                    except exception as e :
+                                        print(e)
+                            except:
+                                print('drop ok')           
+
+
+                        time.sleep(1.00)
+                        driver.find_element_by_xpath('/html/body/div[4]/div/div[1]/div/div/div[3]/button[1]').click()
+
+
+                        if aresult == True : 
+                            qry.execute('update Dat_NavShopEdit set status = 30, Update_DT=getdate() where seq=' + seq)
+                        else :
+
+                            if trycount > 3 :    
+                                qry.execute('update Dat_NavShopEdit set status = 40, Update_DT=getdate() where seq=' + seq)
+                            else : 
+                                qry.execute('update Dat_NavShopEdit set status = 10, Update_DT=getdate() where seq=' + seq)
+
+
+                        driver.status = 'idle'
+                        time.sleep(1.00)             
+
+                        if imagesize > 0 :
+                            os.remove(imagepath)
+
+                    except:
+                        # print('error Seq : ' + seq)
+                        if driver != None : 
+                            driver.status = 'idle'
+                        
+                        if trycount > 3 :
                             qry.execute('update Dat_NavShopEdit set status = 40, Update_DT=getdate() where seq=' + seq)
-                        else : 
+                        else :
                             qry.execute('update Dat_NavShopEdit set status = 10, Update_DT=getdate() where seq=' + seq)
 
 
-                    driver.status = 'idle'
-                    time.sleep(1.00)             
-
-                    if row['imagesize'] > 0 :
-                        os.remove(imagepath)
-
                 except:
-                    # print('error Seq : ' + seq)
-                    if driver != None : 
-                        driver.status = 'idle'
-                    
-                    if trycount > 3 :
-                        qry.execute('update Dat_NavShopEdit set status = 40, Update_DT=getdate() where seq=' + seq)
-                    else :
-                        qry.execute('update Dat_NavShopEdit set status = 10, Update_DT=getdate() where seq=' + seq)
+                    qry.execute("insert into Dat_NavShopEdit_log values (" + seq + ", getdate(), 'system data fetch parser error')")    
 
-
-            
         else :
+            time.sleep(10.00)        
             for item in driverlist:
                 item.refreshcount = item.refreshcount + 1
-                if item.refreshcount > 10 :
+                if item.refreshcount > 20 :
                     item.quit()
                     driverlist.remove(item)
                 else : 
