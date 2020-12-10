@@ -203,6 +203,7 @@ if __name__ =='__main__':
                                     aresult = False
                                     try : 
                                         setlog(seq, errormessage)
+                                        aresult = False
                                     except exception as e :
                                         print(e)
                             except:
@@ -247,6 +248,7 @@ if __name__ =='__main__':
                                         aresult = False
                                         try : 
                                             setlog(seq, errormessage)
+                                            aresult = False
                                         except exception as e :
                                             print(e)
                                 except:
